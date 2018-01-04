@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -13,7 +14,7 @@ namespace Sitecore.Support.Analytics.Pipelines.ParseReferrer
 {
   public class AddNotProvidedKeywords : ParseReferrerBaseProcessor
   {
-    private List<string> hostNamesList = new List<string>();
+    private ConcurrentBag<string> hostNamesList = new ConcurrentBag<string>();
 
     private void AddHostParameterName(XmlNode configNode)
     {
