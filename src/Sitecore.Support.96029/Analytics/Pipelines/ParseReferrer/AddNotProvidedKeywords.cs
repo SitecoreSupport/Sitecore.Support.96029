@@ -16,6 +16,10 @@ namespace Sitecore.Support.Analytics.Pipelines.ParseReferrer
   {
     private ConcurrentBag<string> hostNamesList = new ConcurrentBag<string>();
 
+    private object lockObj = new object();
+
+    private bool isInitialized;
+
     private void AddHostParameterName(XmlNode configNode)
     {
       Assert.ArgumentNotNull(configNode, "configNode");
@@ -29,22 +33,33 @@ namespace Sitecore.Support.Analytics.Pipelines.ParseReferrer
 
     private void GetHostNamesList()
     {
-      XmlNode configNode = Factory.GetConfigNode("pipelines/parseReferrer/processor[1]/engines");
-      if (configNode == null)
+      lock (this.lockObj)
       {
-        Log.Warn("Sitecore.Support.96029: The search engines section was not found", this);
-        return;
-      }
+        if (!isInitialized)
+        {
+          XmlNode configNode = Factory.GetConfigNode("pipelines/parseReferrer/processor[1]/engines");
+          if (configNode == null)
+          {
+            Log.Warn("Sitecore.Support.96029: The search engines section was not found", this);
+            return;
+          }
 
-      foreach (XmlNode configNode2 in configNode.ChildNodes)
-      {
-        this.AddHostParameterName(configNode2);
+          foreach (XmlNode configNode2 in configNode.ChildNodes)
+          {
+            this.AddHostParameterName(configNode2);
+          }
+
+          this.isInitialized = true;
+        }
       }
     }
 
     public override void Process(ParseReferrerArgs args)
     {
-      this.GetHostNamesList();
+      if (!this.isInitialized)
+      {
+        this.GetHostNamesList();
+      }
 
       if (args.Interaction.Keywords.IsNullOrEmpty() && this.hostNamesList.Any((string x) => args.UrlReferrer.DnsSafeHost.Contains(x)))
       {
